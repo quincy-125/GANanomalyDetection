@@ -18,8 +18,8 @@ class EasyDict(dict):
 #----------------------------------------------------------------------------
 # Paths.
 
-data_dir = 'datasets'
-result_dir = 'results'
+data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Normal/tfrecords/progan'
+result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Code/GANanomalyDetection/results'
 
 #----------------------------------------------------------------------------
 # TensorFlow options.
@@ -58,13 +58,15 @@ D_anomaly_test   = EasyDict(func='networks.D_anomaly')
 D_anomaly_Gout   = EasyDict(func='networks.D_anomaly')   
 
 # Dataset (choose one).
+desc += '-custom';            dataset = EasyDict(tfrecord_dir=data_dir); train.mirror_augment = True
+
 #desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='celebahq'); train.mirror_augment = True
 #desc += '-celeba';              dataset = EasyDict(tfrecord_dir='celeba'); train.mirror_augment = True
 #desc += '-cifar10_ab1_0.02';             dataset = EasyDict(tfrecord_dir='cifar10_ab1_0.02'); #train.mirror_augment = True
 #desc += '-lsun_bedroom_bw_0.0';             dataset = EasyDict(tfrecord_dir='lsun_bedroom_bw_0.0');
 #desc += '-cifar100';            dataset = EasyDict(tfrecord_dir='cifar100')
 #desc += '-svhn';                dataset = EasyDict(tfrecord_dir='svhn')
-desc += '-mnist_2_0.0';               dataset = EasyDict(tfrecord_dir='mnist_2_0.0')
+#desc += '-mnist_2_0.0';               dataset = EasyDict(tfrecord_dir='mnist_2_0.0')
 #desc += '-cellvideos_64_64';         dataset = EasyDict(tfrecord_dir='cellvideos_64_64')
 #desc += '-cellvideos_junk_64_64_8bit_rot';         dataset = EasyDict(tfrecord_dir='cellvideos_junk_64_64_8bit_rot');
 #desc += '-cellvideos_64_64_rot_8bit_0.0005';         dataset = EasyDict(tfrecord_dir='cellvideos_64_64_rot_8bit_0.0005')

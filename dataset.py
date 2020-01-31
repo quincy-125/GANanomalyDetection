@@ -8,25 +8,33 @@
 import os
 import glob
 import numpy as np
-import tensorflow as tf
 import tfutil
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 #----------------------------------------------------------------------------
 # Parse individual image from a tfrecords file.
 
 def parse_tfrecord_tf(record):
-    features = tf.parse_single_example(record, features={
-        'shape': tf.FixedLenFeature([3], tf.int64),
-        'data': tf.FixedLenFeature([], tf.string)})
-    data = tf.decode_raw(features['data'], tf.uint8)
-    return tf.reshape(data, features['shape'])
+	features = tf.parse_single_example(record, features={
+		'height': tf.io.FixedLenFeature([], tf.int64),
+		'width': tf.io.FixedLenFeature([], tf.int64),
+		'depth': tf.io.FixedLenFeature([], tf.int64),
+		'label': tf.io.FixedLenFeature([], tf.int64),
+		'class_label': tf.io.FixedLenFeature([], tf.string),
+		'image_name': tf.io.FixedLenFeature([], tf.string),
+		'image_raw': tf.FixedLenFeature([], tf.string)
+	})
+	data = tf.decode_raw(features['image_raw'], tf.uint8)
+	shape = (features['depth'], features['height'], features['width'])
+	return tf.reshape(data, shape)
 
 def parse_tfrecord_np(record):
-    ex = tf.train.Example()
-    ex.ParseFromString(record)
-    shape = ex.features.feature['shape'].int64_list.value
-    data = ex.features.feature['data'].bytes_list.value[0]
-    return np.fromstring(data, np.uint8).reshape(shape)
+	ex = tf.train.Example()
+	ex.ParseFromString(record)
+	shape = ex.features.feature['shape'].int64_list.value
+	data = ex.features.feature['data'].bytes_list.value[0]
+	return np.fromstring(data, np.uint8).reshape(shape)
 
 #----------------------------------------------------------------------------
 # Dataset class that loads data from tfrecords files.
@@ -170,73 +178,73 @@ class TFRecordDataset:
 # Base class for datasets that are generated on the fly.
 
 class SyntheticDataset:
-    def __init__(self, resolution=1024, num_channels=3, dtype='uint8', dynamic_range=[0,255], label_size=0, label_dtype='float32'):
-        self.resolution         = resolution
-        self.resolution_log2    = int(np.log2(resolution))
-        self.shape              = [num_channels, resolution, resolution]
-        self.dtype              = dtype
-        self.dynamic_range      = dynamic_range
-        self.label_size         = label_size
-        self.label_dtype        = label_dtype
-        self._tf_minibatch_var  = None
-        self._tf_lod_var        = None
-        self._tf_minibatch_np   = None
-        self._tf_labels_np      = None
+	def __init__(self, resolution=1024, num_channels=3, dtype='uint8', dynamic_range=[0,255], label_size=0, label_dtype='float32'):
+		self.resolution         = resolution
+		self.resolution_log2    = int(np.log2(resolution))
+		self.shape              = [num_channels, resolution, resolution]
+		self.dtype              = dtype
+		self.dynamic_range      = dynamic_range
+		self.label_size         = label_size
+		self.label_dtype        = label_dtype
+		self._tf_minibatch_var  = None
+		self._tf_lod_var        = None
+		self._tf_minibatch_np   = None
+		self._tf_labels_np      = None
 
-        assert self.resolution == 2 ** self.resolution_log2
-        with tf.name_scope('Dataset'):
-            self._tf_minibatch_var = tf.Variable(np.int32(0), name='minibatch_var')
-            self._tf_lod_var = tf.Variable(np.int32(0), name='lod_var')
+		assert self.resolution == 2 ** self.resolution_log2
+		with tf.name_scope('Dataset'):
+			self._tf_minibatch_var = tf.Variable(np.int32(0), name='minibatch_var')
+			self._tf_lod_var = tf.Variable(np.int32(0), name='lod_var')
 
-    def configure(self, minibatch_size, lod=0):
-        lod = int(np.floor(lod))
-        assert minibatch_size >= 1 and lod >= 0 and lod <= self.resolution_log2
-        tfutil.set_vars({self._tf_minibatch_var: minibatch_size, self._tf_lod_var: lod})
+	def configure(self, minibatch_size, lod=0):
+		lod = int(np.floor(lod))
+		assert minibatch_size >= 1 and lod >= 0 and lod <= self.resolution_log2
+		tfutil.set_vars({self._tf_minibatch_var: minibatch_size, self._tf_lod_var: lod})
 
-    def get_minibatch_tf(self): # => images, labels
-        with tf.name_scope('SyntheticDataset'):
-            shrink = tf.cast(2.0 ** tf.cast(self._tf_lod_var, tf.float32), tf.int32)
-            shape = [self.shape[0], self.shape[1] // shrink, self.shape[2] // shrink]
-            images = self._generate_images(self._tf_minibatch_var, self._tf_lod_var, shape)
-            labels = self._generate_labels(self._tf_minibatch_var)
-            return images, labels
+	def get_minibatch_tf(self): # => images, labels
+		with tf.name_scope('SyntheticDataset'):
+			shrink = tf.cast(2.0 ** tf.cast(self._tf_lod_var, tf.float32), tf.int32)
+			shape = [self.shape[0], self.shape[1] // shrink, self.shape[2] // shrink]
+			images = self._generate_images(self._tf_minibatch_var, self._tf_lod_var, shape)
+			labels = self._generate_labels(self._tf_minibatch_var)
+			return images, labels
 
-    def get_minibatch_np(self, minibatch_size, lod=0): # => images, labels
-        self.configure(minibatch_size, lod)
-        if self._tf_minibatch_np is None:
-            self._tf_minibatch_np = self.get_minibatch_tf()
-        return tfutil.run(self._tf_minibatch_np)
+	def get_minibatch_np(self, minibatch_size, lod=0): # => images, labels
+		self.configure(minibatch_size, lod)
+		if self._tf_minibatch_np is None:
+			self._tf_minibatch_np = self.get_minibatch_tf()
+		return tfutil.run(self._tf_minibatch_np)
 
-    def get_random_labels_tf(self, minibatch_size): # => labels
-        with tf.name_scope('SyntheticDataset'):
-            return self._generate_labels(minibatch_size)
+	def get_random_labels_tf(self, minibatch_size): # => labels
+		with tf.name_scope('SyntheticDataset'):
+			return self._generate_labels(minibatch_size)
 
-    def get_random_labels_np(self, minibatch_size): # => labels
-        self.configure(minibatch_size)
-        if self._tf_labels_np is None:
-            self._tf_labels_np = self.get_random_labels_tf()
-        return tfutil.run(self._tf_labels_np)
+	def get_random_labels_np(self, minibatch_size): # => labels
+		self.configure(minibatch_size)
+		if self._tf_labels_np is None:
+			self._tf_labels_np = self.get_random_labels_tf()
+		return tfutil.run(self._tf_labels_np)
 
-    def _generate_images(self, minibatch, lod, shape): # to be overridden by subclasses
-        return tf.zeros([minibatch] + shape, self.dtype)
+	def _generate_images(self, minibatch, lod, shape): # to be overridden by subclasses
+		return tf.zeros([minibatch] + shape, self.dtype)
 
-    def _generate_labels(self, minibatch): # to be overridden by subclasses
-        return tf.zeros([minibatch, self.label_size], self.label_dtype)
+	def _generate_labels(self, minibatch): # to be overridden by subclasses
+		return tf.zeros([minibatch, self.label_size], self.label_dtype)
 
 #----------------------------------------------------------------------------
 # Helper func for constructing a dataset object using the given options.
 
 def load_dataset(class_name='dataset.TFRecordDataset', data_dir=None, verbose=False, **kwargs):
-    adjusted_kwargs = dict(kwargs)
-    if 'tfrecord_dir' in adjusted_kwargs and data_dir is not None:
-        adjusted_kwargs['tfrecord_dir'] = os.path.join(data_dir, adjusted_kwargs['tfrecord_dir'])
-    if verbose:
-        print('Streaming data using %s...' % class_name)
-    dataset = tfutil.import_obj(class_name)(**adjusted_kwargs)
-    if verbose:
-        print('Dataset shape =', np.int32(dataset.shape).tolist())
-        print('Dynamic range =', dataset.dynamic_range)
-        print('Label size    =', dataset.label_size)
-    return dataset
+	adjusted_kwargs = dict(kwargs)
+	if 'tfrecord_dir' in adjusted_kwargs and data_dir is not None:
+		adjusted_kwargs['tfrecord_dir'] = os.path.join(data_dir, adjusted_kwargs['tfrecord_dir'])
+	if verbose:
+		print('Streaming data using %s...' % class_name)
+	dataset = tfutil.import_obj(class_name)(**adjusted_kwargs)
+	if verbose:
+		print('Dataset shape =', np.int32(dataset.shape).tolist())
+		print('Dynamic range =', dataset.dynamic_range)
+		print('Label size    =', dataset.label_size)
+	return dataset
 
 #----------------------------------------------------------------------------

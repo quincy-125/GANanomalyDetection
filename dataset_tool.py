@@ -30,9 +30,12 @@ def error(msg):
 #----------------------------------------------------------------------------
 
 class TFRecordExporter:
-	def __init__(self, tfrecord_dir, expected_images, print_progress=True, progress_interval=10):
+	def __init__(self, tfrecord_dir, expected_images, print_progress=True, progress_interval=10, prefix=None):
 		self.tfrecord_dir       = tfrecord_dir
-		self.tfr_prefix         = os.path.join(self.tfrecord_dir, os.path.basename(self.tfrecord_dir))
+		if prefix is None:
+			self.tfr_prefix     = os.path.join(self.tfrecord_dir, os.path.basename(self.tfrecord_dir))
+		else:
+			self.tfr_prefix = prefix
 		self.expected_images    = expected_images
 		self.cur_images         = 0
 		self.shape              = None
@@ -70,10 +73,10 @@ class TFRecordExporter:
 			assert self.shape[0] in [1, 3]
 			assert self.shape[1] == self.shape[2]
 			assert self.shape[1] == 2**self.resolution_log2
-			tfr_opt = tf.python_io.TFRecordOptions(tf.python_io.TFRecordCompressionType.NONE)
+			tfr_opt = tf.compat.v1.python_io.TFRecordOptions(tf.compat.v1.python_io.TFRecordCompressionType.NONE)
 			for lod in range(self.resolution_log2 - 1):
 				tfr_file = self.tfr_prefix + '-r%02d.tfrecords' % (self.resolution_log2 - lod)
-				self.tfr_writers.append(tf.python_io.TFRecordWriter(tfr_file, tfr_opt))
+				self.tfr_writers.append(tf.compat.v1.python_io.TFRecordWriter(tfr_file, tfr_opt))
 		assert img.shape == self.shape
 		for lod, tfr_writer in enumerate(self.tfr_writers):
 			if lod:
@@ -972,8 +975,7 @@ def create_celebahq(tfrecord_dir, celeba_dir, delta_dir, num_threads=4, num_task
 
 #----------------------------------------------------------------------------
 
-def create_from_images(tfrecord_dir, image_dir, shuffle):
-	shuffle=True
+def create_from_images(tfrecord_dir, image_dir, shuffle=True, prefix=None):
 	print('Loading images from "%s"' % image_dir)
 	image_filenames = sorted(glob.glob(os.path.join(image_dir, '*.png')))
 	if len(image_filenames) == 0:
@@ -990,7 +992,7 @@ def create_from_images(tfrecord_dir, image_dir, shuffle):
 	if channels not in [1, 3]:
 		error('Input images must be stored as RGB or grayscale')
 
-	with TFRecordExporter(tfrecord_dir, len(image_filenames)) as tfr:
+	with TFRecordExporter(tfrecord_dir, len(image_filenames), prefix=prefix) as tfr:
 		order = tfr.choose_shuffled_order() if shuffle else np.arange(len(image_filenames))
 		for idx in range(order.size):
 			img = np.asarray(PIL.Image.open(image_filenames[order[idx]]))

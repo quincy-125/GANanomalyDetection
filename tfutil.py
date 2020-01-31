@@ -19,7 +19,8 @@ from glob import glob
 from tensorflow.python.framework import ops
 import imageio
 import cv2
-
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 #----------------------------------------------------------------------------
 # Convenience.
 
@@ -253,7 +254,8 @@ class Optimizer:
     def __init__(
         self,
         name                = 'Train',
-        tf_optimizer        = 'tf.train.AdamOptimizer',
+        #tf_optimizer        = 'tf.train.AdamOptimizer',
+        tf_optimizer        = 'tf.compat.v1.train.AdamOptimizer',
         learning_rate       = 0.001,
         use_loss_scaling    = False,
         loss_scaling_init   = 64.0,
@@ -696,7 +698,7 @@ class Network:
 				print('\r%d / %d' % (mb_begin, num_items), end='')
 			mb_end = min(mb_begin + minibatch_size, num_items)
 			mb_in = [src[mb_begin : mb_end] for src in in_arrays]
-			mb_out = tf.get_default_session().run(out_expr, dict(zip(self.input_templates, mb_in)))
+			mb_out = tf.get_default_session.run(out_expr, dict(zip(self.input_templates, mb_in)))
 			for dst, src in zip(out_arrays, mb_out):
 				dst[mb_begin : mb_end] = src
 
@@ -833,7 +835,7 @@ class AnomalyDetectorEncoder(object):
 		dis_loss = tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.abs(tf.subtract(dis_f_z, dis_f_input)),1),1),1)
 		ano_score = (1. - self.ano_para)* res_loss + self.ano_para* dis_loss
 		
-		sess = tf.get_default_session() 
+		sess = tf.tf.get_default_session()
 		samples = sess.run(closest_matches)
 		errors = np.absolute(samples-test_data)-1
 		

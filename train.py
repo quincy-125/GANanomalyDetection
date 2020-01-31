@@ -14,7 +14,8 @@ import config
 import tfutil
 import dataset
 import misc
-
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 #----------------------------------------------------------------------------
 # Choose the size and contents of the image snapshot grids that are exported
 # periodically during training.

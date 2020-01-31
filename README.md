@@ -37,3 +37,10 @@ Don't hesitate to contact me if you have any questions. Happy coding!
 ## References
 [1] T. Karras, T. Aila, S. Laine, and J. Lehtinen. Progressive Growing of GANs for Improved Quality, Stability,
 and Variation. In ICLR 2018, oct 2017.
+
+# To process your own samples
+First, create a folder where your image patches live. Then run: 
+```bash
+ python prepare_dataset.py -i /path/to/patch_dir -o path/to/outdir
+```
+This will make TFRecords for each resolution.

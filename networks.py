@@ -7,7 +7,8 @@
 
 import numpy as np
 import tensorflow as tf
-
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 # NOTE: Do not import any application-specific modules here!
 
 def absolute_name_scope(scope): # Forcefully enter the specified name scope, ignoring any surrounding scopes.

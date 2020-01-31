@@ -6,10 +6,10 @@
 # Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 import numpy as np
-import tensorflow as tf
 
 import tfutil
-
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 #----------------------------------------------------------------------------
 # Convenience func that casts all of its arguments to tf.float32.
 
