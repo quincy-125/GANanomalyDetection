@@ -8,16 +8,17 @@
 import numpy as np
 
 import tfutil
+import tensorflow as tf
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 #----------------------------------------------------------------------------
 # Convenience func that casts all of its arguments to tf.float32.
 
 def fp32(*values):
-    if len(values) == 1 and isinstance(values[0], tuple):
-        values = values[0]
-    values = tuple(tf.cast(v, tf.float32) for v in values)
-    return values if len(values) >= 2 else values[0]
+	if len(values) == 1 and isinstance(values[0], tuple):
+		values = values[0]
+	values = tuple(tf.cast(v, tf.float32) for v in values)
+	return values if len(values) >= 2 else values[0]
 
 #----------------------------------------------------------------------------
 # Generator loss function used in the paper (WGAN + AC-GAN).

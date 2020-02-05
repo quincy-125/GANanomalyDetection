@@ -12,7 +12,7 @@ tf.disable_v2_behavior()
 # NOTE: Do not import any application-specific modules here!
 
 def absolute_name_scope(scope): # Forcefully enter the specified name scope, ignoring any surrounding scopes.
-    return tf.name_scope(scope + '/')
+	return tf.name_scope(scope + '/')
 
 #----------------------------------------------------------------------------
 
@@ -38,20 +38,20 @@ def get_weight(shape, gain=np.sqrt(2), use_wscale=False, fan_in=None, trainable=
 # Fully-connected layer.
 
 def dense(x, fmaps, gain=np.sqrt(2), use_wscale=False, trainable=None):
-    if len(x.shape) > 2:
-        x = tf.reshape(x, [-1, np.prod([d.value for d in x.shape[1:]])])
-    w = get_weight([x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
-    w = tf.cast(w, x.dtype)
-    return tf.matmul(x, w)
+	if len(x.shape) > 2:
+		x = tf.reshape(x, [-1, np.prod([d.value for d in x.shape[1:]])])
+	w = get_weight([x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
+	w = tf.cast(w, x.dtype)
+	return tf.matmul(x, w)
 
 #----------------------------------------------------------------------------
 # Convolutional layer.
 
 def conv2d(x, fmaps, kernel, gain=np.sqrt(2), use_wscale=False, trainable=None):
-    assert kernel >= 1 and kernel % 2 == 1
-    w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
-    w = tf.cast(w, x.dtype)
-    return tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME', data_format='NCHW')
+	assert kernel >= 1 and kernel % 2 == 1
+	w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
+	w = tf.cast(w, x.dtype)
+	return tf.nn.conv2d(x, w, strides=[1,1,1,1], padding='SAME', data_format='NCHW')
 
 #----------------------------------------------------------------------------
 # Apply bias to the given activation tensor.
@@ -68,9 +68,9 @@ def apply_bias(x, trainable=None):
 # Leaky ReLU activation. Same as tf.nn.leaky_relu, but supports FP16.
 
 def leaky_relu(x, alpha=0.2):
-    with tf.name_scope('LeakyRelu'):
-        alpha = tf.constant(alpha, dtype=x.dtype, name='alpha')
-        return tf.maximum(x * alpha, x)
+	with tf.name_scope('LeakyRelu'):
+		alpha = tf.constant(alpha, dtype=x.dtype, name='alpha')
+		return tf.maximum(x * alpha, x)
 
 #----------------------------------------------------------------------------
 # Nearest-neighbor upscaling layer.
@@ -91,13 +91,13 @@ def upscale2d(x, factor=2):
 # Faster and uses less memory than performing the operations separately.
 
 def upscale2d_conv2d(x, fmaps, kernel, gain=np.sqrt(2), use_wscale=False, trainable=None):
-    assert kernel >= 1 and kernel % 2 == 1
-    w = get_weight([kernel, kernel, fmaps, x.shape[1].value], gain=gain, use_wscale=use_wscale, fan_in=(kernel**2)*x.shape[1].value, trainable=trainable)
-    w = tf.pad(w, [[1,1], [1,1], [0,0], [0,0]], mode='CONSTANT')
-    w = tf.add_n([w[1:, 1:], w[:-1, 1:], w[1:, :-1], w[:-1, :-1]])
-    w = tf.cast(w, x.dtype)
-    os = [tf.shape(x)[0], fmaps, x.shape[2] * 2, x.shape[3] * 2]
-    return tf.nn.conv2d_transpose(x, w, os, strides=[1,1,2,2], padding='SAME', data_format='NCHW')
+	assert kernel >= 1 and kernel % 2 == 1
+	w = get_weight([kernel, kernel, fmaps, x.shape[1].value], gain=gain, use_wscale=use_wscale, fan_in=(kernel**2)*x.shape[1].value, trainable=trainable)
+	w = tf.pad(w, [[1,1], [1,1], [0,0], [0,0]], mode='CONSTANT')
+	w = tf.add_n([w[1:, 1:], w[:-1, 1:], w[1:, :-1], w[:-1, :-1]])
+	w = tf.cast(w, x.dtype)
+	os = [tf.shape(x)[0], fmaps, x.shape[2] * 2, x.shape[3] * 2]
+	return tf.nn.conv2d_transpose(x, w, os, strides=[1,1,2,2], padding='SAME', data_format='NCHW')
 
 #----------------------------------------------------------------------------
 # Box filter downscaling layer.
@@ -115,12 +115,12 @@ def downscale2d(x, factor=2):
 # Faster and uses less memory than performing the operations separately.
 
 def conv2d_downscale2d(x, fmaps, kernel, gain=np.sqrt(2), use_wscale=False, trainable=None):
-    assert kernel >= 1 and kernel % 2 == 1
-    w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
-    w = tf.pad(w, [[1,1], [1,1], [0,0], [0,0]], mode='CONSTANT')
-    w = tf.add_n([w[1:, 1:], w[:-1, 1:], w[1:, :-1], w[:-1, :-1]]) * 0.25
-    w = tf.cast(w, x.dtype)
-    return tf.nn.conv2d(x, w, strides=[1,1,2,2], padding='SAME', data_format='NCHW')
+	assert kernel >= 1 and kernel % 2 == 1
+	w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain, use_wscale=use_wscale, trainable=trainable)
+	w = tf.pad(w, [[1,1], [1,1], [0,0], [0,0]], mode='CONSTANT')
+	w = tf.add_n([w[1:, 1:], w[:-1, 1:], w[1:, :-1], w[:-1, :-1]]) * 0.25
+	w = tf.cast(w, x.dtype)
+	return tf.nn.conv2d(x, w, strides=[1,1,2,2], padding='SAME', data_format='NCHW')
 
 #----------------------------------------------------------------------------
 # Pixelwise feature vector normalization.
@@ -131,7 +131,7 @@ def pixel_norm(x, epsilon=1e-8):
 		
 def pixel_norm_cluster(x, num_classes, epsilon=1e-8):
 	with tf.variable_scope('PixelNorm', reuse=tf.AUTO_REUSE):
-		x_n, x_c = tf.split(x,[512-num_classes,num_classes],1)
+		x_n, x_c = tf.split(x,[1024-num_classes,num_classes],1)
 		x_n = 0.1*x_n * tf.rsqrt(tf.reduce_mean(tf.square(x_n), axis=1, keepdims=True) + epsilon)
 		#x_c = x_c * tf.rsqrt(tf.reduce_mean(tf.square(x_c), axis=1, keepdims=True) + epsilon)
 		return tf.concat([x_n,x_c],1)
@@ -139,19 +139,22 @@ def pixel_norm_cluster(x, num_classes, epsilon=1e-8):
 #----------------------------------------------------------------------------
 # Minibatch standard deviation.
 
-def minibatch_stddev_layer(x, group_size=4):
-    with tf.variable_scope('MinibatchStddev'):
-        group_size = tf.minimum(group_size, tf.shape(x)[0])     # Minibatch must be divisible by (or smaller than) group_size.
-        s = x.shape                                             # [NCHW]  Input shape.
-        y = tf.reshape(x, [group_size, -1, s[1], s[2], s[3]])   # [GMCHW] Split minibatch into M groups of size G.
-        y = tf.cast(y, tf.float32)                              # [GMCHW] Cast to FP32.
-        y -= tf.reduce_mean(y, axis=0, keepdims=True)           # [GMCHW] Subtract mean over group.
-        y = tf.reduce_mean(tf.square(y), axis=0)                # [MCHW]  Calc variance over group.
-        y = tf.sqrt(y + 1e-8)                                   # [MCHW]  Calc stddev over group.
-        y = tf.reduce_mean(y, axis=[1,2,3], keepdims=True)      # [M111]  Take average over fmaps and pixels.
-        y = tf.cast(y, x.dtype)                                 # [M111]  Cast back to original data type.
-        y = tf.tile(y, [group_size, 1, s[2], s[3]])             # [N1HW]  Replicate over group and pixels.
-        return tf.concat([x, y], axis=1)                        # [NCHW]  Append as new fmap.
+def minibatch_stddev_layer(x, group_size=3):
+	print('minibatch_stddev_layer')
+
+	with tf.variable_scope('MinibatchStddev'):
+		group_size = tf.minimum(group_size, tf.shape(x)[0])     # Minibatch must be divisible by (or smaller than) group_size.
+		print('MinibatchStddev Shape is {}'.format(x.shape))
+		s = x.shape                                             # [NCHW]  Input shape.
+		y = tf.reshape(x, [group_size, -1, s[1], s[2], s[3]])   # [GMCHW] Split minibatch into M groups of size G.
+		y = tf.cast(y, tf.float32)                              # [GMCHW] Cast to FP32.
+		y -= tf.reduce_mean(y, axis=0, keepdims=True)           # [GMCHW] Subtract mean over group.
+		y = tf.reduce_mean(tf.square(y), axis=0)                # [MCHW]  Calc variance over group.
+		y = tf.sqrt(y + 1e-8)                                   # [MCHW]  Calc stddev over group.
+		y = tf.reduce_mean(y, axis=[1,2,3], keepdims=True)      # [M111]  Take average over fmaps and pixels.
+		y = tf.cast(y, x.dtype)                                 # [M111]  Cast back to original data type.
+		y = tf.tile(y, [group_size, 1, s[2], s[3]])             # [N1HW]  Replicate over group and pixels.
+		return tf.concat([x, y], axis=1)                        # [NCHW]  Append as new fmap.
 
 #----------------------------------------------------------------------------
 # Generator network used in the paper.
@@ -164,7 +167,7 @@ def G_paper(
 	label_size          = 0,            # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
 	fmap_base           = 8192,         # Overall multiplier for the number of feature maps.
 	fmap_decay          = 1.0,          # log2 feature map reduction when doubling the resolution.
-	fmap_max            = 512,          # Maximum number of feature maps in any layer.
+	fmap_max            = 1024,          # Maximum number of feature maps in any layer.
 	latent_size         = None,         # Dimensionality of the latent vectors. None = min(fmap_base, fmap_max).
 	normalize_latents   = True,         # Normalize latent vectors before feeding them to the network?
 	use_wscale          = True,         # Enable equalized learning rate?
@@ -255,7 +258,7 @@ def D_paper(
 	label_size          = 0,            # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
 	fmap_base           = 8192,         # Overall multiplier for the number of feature maps.
 	fmap_decay          = 1.0,          # log2 feature map reduction when doubling the resolution.
-	fmap_max            = 512,          # Maximum number of feature maps in any layer.
+	fmap_max            = 1024,          # Maximum number of feature maps in any layer.
 	use_wscale          = True,         # Enable equalized learning rate?
 	mbstd_group_size    = 4,            # Group size for the minibatch standard deviation layer, 0 = disable.
 	dtype               = 'float32',    # Data type to use for activations and outputs.
@@ -301,7 +304,7 @@ def D_paper(
 				with tf.variable_scope('Dense1'):
 					x = apply_bias(dense(x, fmaps=1+label_size, gain=1, use_wscale=use_wscale))
 			return x
-    
+
 	# Linear structure: simple but inefficient.
 	if structure == 'linear':
 		img = images_in
@@ -334,22 +337,22 @@ def D_paper(
 
 def E_clusterGAN(
 	images_in,  # Input: Images [minibatch, channel, height, width].
-	num_channels=1,  # Number of input color channels. Overridden based on dataset.
+	num_channels=3,  # Number of input color channels. Overridden based on dataset.
 	resolution=32,  # Input resolution. Overridden based on dataset.
 	label_size=0,  # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
 	fmap_base=8192,  # Overall multiplier for the number of feature maps.
 	fmap_decay=1.0,  # log2 feature map reduction when doubling the resolution.
-	fmap_max=512,  # Maximum number of feature maps in any layer.
+	fmap_max=1024,  # Maximum number of feature maps in any layer.
 	use_wscale=True,  # Enable equalized learning rate?
-	mbstd_group_size=4,  # Group size for the minibatch standard deviation layer, 0 = disable.
+	mbstd_group_size=0,  # Group size for the minibatch standard deviation layer, 0 = disable.
 	dtype='float32',  # Data type to use for activations and outputs.
 	fused_scale=True,  # True = use fused conv2d + downscale2d, False = separate downscale2d layers.
 	structure=None,  # 'linear' = human-readable, 'recursive' = efficient, None = select automatically
 	is_template_graph=False,  # True = template graph constructed by the Network class, False = actual evaluation.
 	**kwargs):  # Ignore unrecognized keyword args.
 
-
-	print('E cluster network is initialized!')
+	print('E cluster network is initialized with shape: {}!'.format(images_in.shape))
+	print('resolution: {}'.format(resolution))
 	resolution_log2 = int(np.log2(resolution))
 	assert resolution == 2 ** resolution_log2 and resolution >= 4
 
@@ -425,26 +428,26 @@ def E_clusterGAN(
 #----------------------------------------------------------------------------
 
 def G_anomaly(
-    latents_in,                         # First input: Latent vectors [minibatch, latent_size].
-    #labels_in,                          # Second input: Labels [minibatch, label_size].
-    num_channels        = 1,            # Number of output color channels. Overridden based on dataset.
-    resolution          = 32,           # Output resolution. Overridden based on dataset.
-    label_size          = 0,            # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
-    fmap_base           = 8192,         # Overall multiplier for the number of feature maps.
-    fmap_decay          = 1.0,          # log2 feature map reduction when doubling the resolution.
-    fmap_max            = 512,          # Maximum number of feature maps in any layer.
-    latent_size         = None,         # Dimensionality of the latent vectors. None = min(fmap_base, fmap_max).
-    normalize_latents   = True,         # Normalize latent vectors before feeding them to the network?
-    use_wscale          = True,         # Enable equalized learning rate?
-    use_pixelnorm       = True,         # Enable pixelwise feature vector normalization?
-    pixelnorm_epsilon   = 1e-8,         # Constant epsilon for pixelwise feature vector normalization.
-    use_leakyrelu       = True,         # True = leaky ReLU, False = ReLU.
-    dtype               = 'float32',    # Data type to use for activations and outputs.
-    fused_scale         = True,         # True = use fused upscale2d + conv2d, False = separate upscale2d layers.
-    structure           = None,         # 'linear' = human-readable, 'recursive' = efficient, None = select automatically.
-    is_template_graph   = False,        # True = template graph constructed by the Network class, False = actual evaluation.
+	latents_in,                         # First input: Latent vectors [minibatch, latent_size].
+	#labels_in,                          # Second input: Labels [minibatch, label_size].
+	num_channels        = 1,            # Number of output color channels. Overridden based on dataset.
+	resolution          = 32,           # Output resolution. Overridden based on dataset.
+	label_size          = 0,            # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
+	fmap_base           = 8192,         # Overall multiplier for the number of feature maps.
+	fmap_decay          = 1.0,          # log2 feature map reduction when doubling the resolution.
+	fmap_max            = 1024,          # Maximum number of feature maps in any layer.
+	latent_size         = None,         # Dimensionality of the latent vectors. None = min(fmap_base, fmap_max).
+	normalize_latents   = True,         # Normalize latent vectors before feeding them to the network?
+	use_wscale          = True,         # Enable equalized learning rate?
+	use_pixelnorm       = True,         # Enable pixelwise feature vector normalization?
+	pixelnorm_epsilon   = 1e-8,         # Constant epsilon for pixelwise feature vector normalization.
+	use_leakyrelu       = True,         # True = leaky ReLU, False = ReLU.
+	dtype               = 'float32',    # Data type to use for activations and outputs.
+	fused_scale         = True,         # True = use fused upscale2d + conv2d, False = separate upscale2d layers.
+	structure           = None,         # 'linear' = human-readable, 'recursive' = efficient, None = select automatically.
+	is_template_graph   = False,        # True = template graph constructed by the Network class, False = actual evaluation.
 	**kwargs):                          # Ignore unrecognized keyword args.
-    
+
 	print('G Anomaly network is initialized!')
 	resolution_log2 = int(np.log2(resolution))
 	assert resolution == 2**resolution_log2 and resolution >= 4
@@ -453,14 +456,14 @@ def G_anomaly(
 	if latent_size is None: latent_size = nf(0)
 	if structure is None: structure = 'linear' if is_template_graph else 'recursive'
 	act = leaky_relu if use_leakyrelu else tf.nn.relu
-    
+
 	latents_in.set_shape([None, latent_size])
 	#labels_in.set_shape([None, label_size])
 	#combo_in = tf.cast(tf.concat([latents_in, labels_in], axis=1), dtype)
 	#lod_in = tf.cast(tf.get_variable('lod', trainable=False), dtype)
 	lod_in = tf.cast(tf.get_variable('lod', initializer=np.float32(0.0), trainable=False), dtype)
 	
-    # Building blocks.
+	# Building blocks.
 	def block(x, res): # res = 2..resolution_log2
 		with tf.variable_scope('%dx%d' % (2**res, 2**res), reuse=tf.AUTO_REUSE) as res_scope:
 			with absolute_name_scope(res_scope.name):
@@ -495,7 +498,7 @@ def G_anomaly(
 			with absolute_name_scope(scope_torgb.name):
 				return apply_bias(conv2d(x, fmaps=num_channels, kernel=1, gain=1, use_wscale=use_wscale, trainable=False),trainable=False)
 				
-    # Linear structure: simple but inefficient.
+	# Linear structure: simple but inefficient.
 	if structure == 'linear':
 		x = block(latents_in, 2)
 		images_out = torgb(x, 2)
@@ -508,7 +511,7 @@ def G_anomaly(
 				with absolute_name_scope(scope_grow.name):
 					images_out = lerp_clip(img, images_out, lod_in - lod)
 
-    # Recursive structure: complex but efficient.
+	# Recursive structure: complex but efficient.
 	if structure == 'recursive':
 		def grow(x, res, lod):
 			y = block(x, res)
@@ -517,7 +520,7 @@ def G_anomaly(
 			if lod > 0: img = cset(img, (lod_in < lod), lambda: grow(y, res + 1, lod - 1))
 			return img()
 		images_out = grow(latents_in, 2, resolution_log2 - 2)
-    
+
 	assert images_out.dtype == tf.as_dtype(dtype)
 	images_out = tf.identity(images_out, name='images_out')
 	return images_out
@@ -530,7 +533,7 @@ def D_anomaly(
 	label_size          = 0,            # Dimensionality of the labels, 0 if no labels. Overridden based on dataset.
 	fmap_base           = 8192,         # Overall multiplier for the number of feature maps.
 	fmap_decay          = 1.0,          # log2 feature map reduction when doubling the resolution.
-	fmap_max            = 512,          # Maximum number of feature maps in any layer.
+	fmap_max            = 1024,          # Maximum number of feature maps in any layer.
 	use_wscale          = True,         # Enable equalized learning rate?
 	mbstd_group_size    = 4,            # Group size for the minibatch standard deviation layer, 0 = disable.
 	dtype               = 'float32',    # Data type to use for activations and outputs.

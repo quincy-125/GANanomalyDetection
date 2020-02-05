@@ -9,6 +9,7 @@ import os
 import glob
 import numpy as np
 import tfutil
+import tensorflow as tf
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
@@ -17,17 +18,10 @@ tf.disable_v2_behavior()
 
 def parse_tfrecord_tf(record):
 	features = tf.parse_single_example(record, features={
-		'height': tf.io.FixedLenFeature([], tf.int64),
-		'width': tf.io.FixedLenFeature([], tf.int64),
-		'depth': tf.io.FixedLenFeature([], tf.int64),
-		'label': tf.io.FixedLenFeature([], tf.int64),
-		'class_label': tf.io.FixedLenFeature([], tf.string),
-		'image_name': tf.io.FixedLenFeature([], tf.string),
-		'image_raw': tf.FixedLenFeature([], tf.string)
-	})
-	data = tf.decode_raw(features['image_raw'], tf.uint8)
-	shape = (features['depth'], features['height'], features['width'])
-	return tf.reshape(data, shape)
+		'shape': tf.FixedLenFeature([3], tf.int64),
+		'data': tf.FixedLenFeature([], tf.string)})
+	data = tf.decode_raw(features['data'], tf.uint8)
+	return tf.reshape(data, features['shape'])
 
 def parse_tfrecord_np(record):
 	ex = tf.train.Example()
@@ -124,6 +118,7 @@ class TFRecordDataset:
 			self._tf_labels_dataset = tf.data.Dataset.from_tensor_slices(self._tf_labels_var)
 			for tfr_file, tfr_shape, tfr_lod in zip(tfr_files, tfr_shapes, tfr_lods):
 				if tfr_lod < 0:
+					print('tfr_lod < 0: {}'.format(tfr_lod))
 					continue
 				dset = tf.data.TFRecordDataset(tfr_file, compression_type='', buffer_size=buffer_mb<<20)
 				dset = dset.map(parse_tfrecord_tf, num_parallel_calls=num_threads)
@@ -178,6 +173,7 @@ class TFRecordDataset:
 # Base class for datasets that are generated on the fly.
 
 class SyntheticDataset:
+	# noinspection PyDefaultArgument
 	def __init__(self, resolution=1024, num_channels=3, dtype='uint8', dynamic_range=[0,255], label_size=0, label_dtype='float32'):
 		self.resolution         = resolution
 		self.resolution_log2    = int(np.log2(resolution))
