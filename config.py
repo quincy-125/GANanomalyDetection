@@ -21,9 +21,9 @@ class EasyDict(dict):
 
 # ----------------------------------------------------------------------------
 # Paths.
-input_dir = 'D:\\PyCharm_Projects\\Ganomaly'
-# data_dir = 'datasets'
-result_dir = 'results'
+#data_dir = 'D:\\PyCharm_Projects\\Ganomaly'
+data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/'
+result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Results'
 
 # ----------------------------------------------------------------------------
 # TensorFlow options.
@@ -64,8 +64,8 @@ D_anomaly_test = EasyDict(func='networks.D_anomaly')
 D_anomaly_Gout = EasyDict(func='networks.D_anomaly')
 
 # Dataset (choose one).
-desc += '-custom';
-dataset = EasyDict(tfrecord_dir='data')
+desc += '-train_data'
+dataset = EasyDict(tfrecord_dir='train_data')
 # desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='celebahq'); train.mirror_augment = True
 # desc += '-celeba';              dataset = EasyDict(tfrecord_dir='celeba'); train.mirror_augment = True
 # desc += '-cifar10_ab1_0.02';             dataset = EasyDict(tfrecord_dir='cifar10_ab1_0.02'); #train.mirror_augment = True
