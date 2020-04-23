@@ -44,28 +44,28 @@ env.TF_CPP_MIN_LOG_LEVEL = '1'  # 0 (default) = Print all available debug info f
 desc = 'pgan'  # Description string included in result subdir name.
 random_seed = 1000  # Global random seed.
 dataset = EasyDict()  # Options for dataset.load_dataset().
-train = EasyDict(
-    func='train.train_progressive_gan')  # , resume_run_id=58, resume_kimg=3246)  # Options for main training func.
-G = EasyDict(func='networks.G_paper')  # Options for generator network.
-D = EasyDict(func='networks.D_paper')  # Options for discriminator network.
-E = EasyDict(func='networks.E_clusterGAN')
-G_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for generator optimizer.
-D_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for discriminator optimizer.
-E_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for discriminator optimizer.
-G_loss = EasyDict(func='loss.G_wgan_acgan')  # Options for generator loss.
-D_loss = EasyDict(func='loss.D_wgangp_acgan')  # Options for discriminator loss.
-E_loss = EasyDict(func='loss.E_wgangp_acgan')  # Options for encoder loss.
-sched = EasyDict()  # Options for train.TrainingSchedule.
-# grid        = EasyDict(size='1080p', layout='random')       # Options for train.setup_snapshot_image_grid().
-grid = EasyDict(size='1080p', layout='row_per_cluster')
-
+#train = EasyDict(
+#    func='train.train_progressive_gan')  # , resume_run_id=58, resume_kimg=3246)  # Options for main training func.
+# G = EasyDict(func='networks.G_paper')  # Options for generator network.
+# D = EasyDict(func='networks.D_paper')  # Options for discriminator network.
+# E = EasyDict(func='networks.E_clusterGAN')
+# G_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for generator optimizer.
+# D_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for discriminator optimizer.
+# E_opt = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8)  # Options for discriminator optimizer.
+# G_loss = EasyDict(func='loss.G_wgan_acgan')  # Options for generator loss.
+# D_loss = EasyDict(func='loss.D_wgangp_acgan')  # Options for discriminator loss.
+# E_loss = EasyDict(func='loss.E_wgangp_acgan')  # Options for encoder loss.
+# sched = EasyDict()  # Options for train.TrainingSchedule.
+# # grid        = EasyDict(size='1080p', layout='random')       # Options for train.setup_snapshot_image_grid().
+# grid = EasyDict(size='1080p', layout='row_per_cluster')
+#
 G_anomaly = EasyDict(func='networks.G_anomaly')  # Options for generator network.
 D_anomaly_test = EasyDict(func='networks.D_anomaly')
 D_anomaly_Gout = EasyDict(func='networks.D_anomaly')
 
 # Dataset (choose one).
-desc += '-train_data'
-dataset = EasyDict(tfrecord_dir='train_data')
+#desc += '-train_data'
+#dataset = EasyDict(tfrecord_dir='train_data')
 # desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='celebahq'); train.mirror_augment = True
 # desc += '-celeba';              dataset = EasyDict(tfrecord_dir='celeba'); train.mirror_augment = True
 # desc += '-cifar10_ab1_0.02';             dataset = EasyDict(tfrecord_dir='cifar10_ab1_0.02'); #train.mirror_augment = True
@@ -117,20 +117,20 @@ dataset = EasyDict(tfrecord_dir='train_data')
 
 # Config presets (choose one).
 # desc += '-preset-v1-1gpu'; num_gpus = 1; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {256: 14, 512: 6, 1024: 3}; sched.lod_training_kimg = 800; sched.lod_transition_kimg = 800; train.total_kimg = 19000
-desc += '-preset-v2-1gpu';
-num_gpus = 1;
-sched.minibatch_base = 4;
-sched.minibatch_dict = {4: 128, 8: 128, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8, 512: 4};
-sched.G_lrate_dict = {1024: 0.0015};
-sched.D_lrate_dict = EasyDict(sched.G_lrate_dict);
-train.total_kimg = 12000
+#desc += '-preset-v2-1gpu';
+#num_gpus = 1;
+#sched.minibatch_base = 4;
+#sched.minibatch_dict = {4: 128, 8: 128, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8, 512: 4};
+#sched.G_lrate_dict = {1024: 0.0015};
+#sched.D_lrate_dict = EasyDict(sched.G_lrate_dict);
+#train.total_kimg = 12000
 # desc += '-preset-v2-2gpus'; num_gpus = 2; sched.minibatch_base = 8; sched.minibatch_dict = {4: 256, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8}; sched.G_lrate_dict = {512: 0.0015, 1024: 0.002}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 # desc += '-preset-v2-4gpus'; num_gpus = 4; sched.minibatch_base = 16; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16}; sched.G_lrate_dict = {256: 0.0015, 512: 0.002, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 # desc += '-preset-v2-8gpus'; num_gpus = 8; sched.minibatch_base = 32; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32}; sched.G_lrate_dict = {128: 0.0015, 256: 0.002, 512: 0.003, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 
 # Numerical precision (choose one).
-desc += '-fp32';
-sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
+# desc += '-fp32';
+# sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
 # desc += '-fp16'; G.dtype = 'float16'; D.dtype = 'float16'; G.pixelnorm_epsilon=1e-4; G_opt.use_loss_scaling = True; D_opt.use_loss_scaling = True; sched.max_minibatch_per_gpu = {512: 16, 1024: 8}
 
 # Disable individual features.
@@ -165,6 +165,6 @@ sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
 # train = EasyDict(func='util_scripts.evaluate_metrics', run_id=23, log='metric-msssim-20k.txt', metrics=['msssim'], num_images=20000, real_passes=1); num_gpus = 1; desc = train.log.split('.')[0] + '-' + str(train.run_id)
 
 # Anomaly detection example
-# train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id=0, log='anomaly_detection_cv_32_mnist', test_data_folder="datasets/mnist_2_0.0/validation/anomaly/"); num_gpus = 1; desc = 'anomaly-detection-' + str(train.run_id)
+train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/Results/000-pgan-train_data-preset-v2-1gpu-fp32', log='anomaly_detection_skin', test_data_folder="/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/test_data/normal"); num_gpus = 1; desc = 'anomaly-detection-' + str(train.run_id)
 
 # ----------------------------------------------------------------------------
