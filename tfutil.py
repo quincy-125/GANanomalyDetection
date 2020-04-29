@@ -12,7 +12,7 @@ import importlib
 import imp
 import math
 import numpy as np
-# import scipy.misc
+from matplotlib.pyplot import imread
 from collections import OrderedDict
 import tensorflow as tf
 from glob import glob
@@ -829,8 +829,7 @@ class Network:
 
 # ----------------------------------------------------------------------------
 class AnomalyDetectorEncoder(object):
-    def __init__(self, config, Ga, Da_Gout, Da_test, Ea, test_data_folder, ano_para=0.1, test_batch_size=8,
-                 dis_loss='feature'):
+    def __init__(self, config, Ga, Da_Gout, Da_test, Ea, test_data_folder, ano_para=0.1, test_batch_size=10):
 
         self.config = config
         self.Ga = Ga
@@ -839,6 +838,7 @@ class AnomalyDetectorEncoder(object):
         self.Da_test = Da_test
         self.test_data_folder = test_data_folder
         self.ano_para = ano_para
+        self.filename_batches = []
 
         if (Ga.output_shapes[0][1] == 1):
             self.grayscale = True
@@ -848,30 +848,22 @@ class AnomalyDetectorEncoder(object):
         self.name = 'AnomalyDetectorEncoder'
         self.scope = tf.get_default_graph().unique_name(self.name.replace('/', '_'), mark_as_used=False)
 
-        self.get_test_data(test_data_folder)
+        self.get_test_data(test_data_folder, test_batch_size)
 
         self.test_result_dir = "test_result"
 
         self.image_dims = [Ga.output_shapes[0][1], Ga.output_shapes[0][2], Ga.output_shapes[0][3]]
-        self.z_dims = [Ga.input_shapes[0][2], Ga.input_shapes[0][3]]
+        #self.z_dims = [Ga.input_shapes[0][2], Ga.input_shapes[0][3]]
+        self.z_dims = [Ga.input_shapes[0][0], Ga.input_shapes[0][1]]
 
-    def find_closest_match(self, test_data, test_data_name, test_batch_size=8):
+    def find_closest_match(self, test_data, test_data_name):
         print("Filename: ", test_data_name, "Detecting anomalies")
 
         test_data_tensor = tf.convert_to_tensor(np.array(test_data))
-        # latents_out_n, latents_out_c = self.Ea.get_output_for(test_data_tensor, is_training=False)
-        # latents=tf.concat([latents_out_n,latents_out_c],1)
-        print(test_data_tensor)
         latents = self.Ea.get_output_for(test_data_tensor, is_training=False)  # TODO FIXA SNYGGARE!!!!
         closest_matches = self.Ga.get_output_for(latents, is_training=False)
 
         res_loss = 1 / (self.image_dims[0] * self.image_dims[1] * self.image_dims[2]) *tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.abs(tf.subtract(test_data_tensor, closest_matches)), 1), 1), 1)
-
-        dis_f_z = self.Da_Gout.get_output_for(closest_matches, is_training=False)
-        dis_f_input = self.Da_test.get_output_for(test_data_tensor, is_training=False)
-
-        dis_loss = -1 / (tf.math.sqrt(self.z_dims[0] * self.z_dims[1])) * tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.abs(tf.subtract(dis_f_z, dis_f_input)), 1), 1), 1)
-
 
         sess = tf.get_default_session()
         samples = sess.run(closest_matches)
@@ -887,17 +879,11 @@ class AnomalyDetectorEncoder(object):
         errors = (np.array(errors) + 1) * 127.5
 
         for i in range(samples.shape[0]):
-            if len(samples.shape) == 3:
-                i_sample = np.expand_dims(samples[i, :, :], axis=0)
-                i_sample = np.concatenate((i_sample, i_sample, i_sample), axis=0)
-                i_error = errors[i, :, :]
 
-            if len(samples.shape) == 4:
-                i_sample = samples[i, :, :, :]
-                i_error = errors[1, :, :]
+            i_sample = samples[i, :, :, :]
+            i_error = errors[1, :, :]
 
-            _path = self.test_data_folder
-            path = os.path.join(_path, self.test_result_dir)
+            path = self.test_result_dir
             if not os.path.isdir(path):
                 os.mkdir(path)
             filename = ['AD_' + test_data_name[i].split("\\")[-1],
@@ -911,30 +897,39 @@ class AnomalyDetectorEncoder(object):
                 cv2.imwrite(os.path.join(path, filename[0]), cv2.cvtColor(i_sample, cv2.COLOR_RGB2BGR))
             else:
                 cv2.imwrite(os.path.join(path, filename[0]), i_sample)
+
+            rgba = cv2.cvtColor(i_sample, cv2.COLOR_RGB2RGBA)
+            rgba[:, :, 3] = i_error
+            cv2.imwrite(os.path.join(path, filename[2]), rgba)
             cv2.imwrite(os.path.join(path, filename[1]), i_error)
-            np.save(os.path.join(path, filename[4]), sess.run(latents)[i, :])
+            np.save(os.path.join(path, filename[4]), sess.run(latents)[0, :])
 
 
     def imread(self, path, grayscale=False):
         if (grayscale):
-            return scipy.misc.imread(path, flatten=True).astype(np.float)
+            return imread(path, flatten=True).astype(np.float)
         else:
-            return scipy.misc.imread(path).astype(np.float)
+            return imread(path).astype(np.float)
 
 
-    def get_test_data(self, folder):
+    def get_test_data(self, folder, batch_size):
         self.test_data_names = glob(folder + '/*.png*')
-        batch = [self.imread(name, self.grayscale) for name in self.test_data_names]
+        test_data_names = self.test_data_names
+        for _ in range(self.test_data_names.__len__() // batch_size):
+            fns = test_data_names[:batch_size]
+            self.filename_batches.append(fns)
+            # Remove the images for the list so they dont get read again
+            test_data_names=test_data_names[:batch_size]
 
-        if self.grayscale:
-            batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-        else:
-            batch_images = np.array(batch).astype(np.float32)
+
+
+    def preprocess_img(self, img_fns):
+
+        batch = [self.imread(name, self.grayscale) for name in img_fns]
+        batch_images = np.array(batch).astype(np.float32)
 
         batch_images_t = [img.transpose(2, 0, 1) for img in batch_images]
         batch_images_t = [img - 127.5 for img in batch_images_t]
         batch_images_t = [img / 127.5 for img in batch_images_t]
 
-        # print np.shape(batch_images)
-        self.test_data = batch_images_t
-        print("[*] test data for anomaly detection is loaded")
+        return batch_images_t
