@@ -919,7 +919,7 @@ class AnomalyDetectorEncoder(object):
             fns = test_data_names[:batch_size]
             self.filename_batches.append(fns)
             # Remove the images for the list so they dont get read again
-            test_data_names=test_data_names[:batch_size]
+            test_data_names=test_data_names[batch_size:]
 
 
 
