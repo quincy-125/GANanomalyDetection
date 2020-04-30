@@ -276,7 +276,7 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
 #My scripts
 #Anomaly detection
 
-def anomaly_detection_encoder(run_id, log, test_data_folder, test_batch_size=10, n_samples=5):
+def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10):
 	
 	result_subdir = misc.locate_result_subdir(run_id)
 	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=False)
@@ -292,7 +292,7 @@ def anomaly_detection_encoder(run_id, log, test_data_folder, test_batch_size=10,
 		Ga.copy_vars_from(Gs)
 
 		print("Initializing Anomaly detector")
-		anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga, E, test_data_folder)
+		anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga, E, test_data_folder, test_batch_size=10)
 		print('# AnoGAN test data names: ' + str(len(anoGAN.test_data_names)))
 
 		for batch in range(anoGAN.filename_batches.__len__()):

@@ -897,6 +897,7 @@ class AnomalyDetectorEncoder(object):
             cv2.imwrite(os.path.join(composite_imgs, 'AD_merge-' + sample_name), numpy_horizontal)
             cv2.imwrite(os.path.join(error_imgs, 'AD_error-' + sample_name), i_error)
             np.save(os.path.join(latent_dir, 'AD_latent-' + sample_name), sess.run(latents)[0, :])
+        del samples, sources, errors
 
 
     def imread(self, path):
