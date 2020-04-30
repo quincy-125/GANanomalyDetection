@@ -21,10 +21,10 @@ class EasyDict(dict):
 
 # ----------------------------------------------------------------------------
 # Paths.
-#data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/'
-#result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Results'
-data_dir = 'D:\\PyCharm_Projects\\Ganomaly\\data'
-result_dir = 'runs'
+data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/'
+result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/Results'
+# data_dir = 'D:\\PyCharm_Projects\\Ganomaly\\data'
+# result_dir = 'runs'
 # ----------------------------------------------------------------------------
 # TensorFlow options.
 
@@ -162,7 +162,7 @@ desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
 #data_dir = 'D:\\PyCharm_Projects\\Ganomaly\\data'
 #train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id='runs/000-pgan-train_data-preset-v2-1gpu-fp32', log='anomaly_detection_skin', test_data_folder="test_data/normal")
 import os
-train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id='000-pgan-train_data-preset-v2-1gpu-fp32', log='anomaly_detection', test_data_folder=os.path.join("test_data","anomaly"))
+train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/Results/001-pgan-train_data-preset-v2-1gpu-fp32', log='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/anomaly_detection_skin', test_data_folder=os.path.join("test_data","anomaly"))
 
 
 # ----------------------------------------------------------------------------
