@@ -829,7 +829,7 @@ class Network:
 
 # ----------------------------------------------------------------------------
 class AnomalyDetectorEncoder(object):
-    def __init__(self, config, Ga, Ea, test_data_folder, ano_para=0.1, test_batch_size=10):
+    def __init__(self, config, Ga, Ea, test_data_folder, ano_para=0.1, test_batch_size=10, img_size=512):
 
         self.config = config
         self.Ga = Ga
@@ -844,11 +844,11 @@ class AnomalyDetectorEncoder(object):
         self.test_result_dir = "test_result"
         self.image_dims = [Ga.output_shapes[0][1], Ga.output_shapes[0][2], Ga.output_shapes[0][3]]
         self.z_dims = [Ga.input_shapes[0][0], Ga.input_shapes[0][1]]
+        self.img_size = img_size
 
     def find_closest_match(self, test_data, test_data_name):
         print("Filename: ", test_data_name, "Detecting anomalies")
 
-        #test_data = (np.array(test_data) + 1) * 127.5
         test_data_tensor = tf.convert_to_tensor(np.array(test_data))
         latents = self.Ea.get_output_for(test_data_tensor, is_training=False)  # TODO FIXA SNYGGARE!!!!
 
@@ -881,8 +881,8 @@ class AnomalyDetectorEncoder(object):
             composite_imgs = os.path.join(path, 'composite_imgs')
             latent_dir = os.path.join(path, 'latent_dir')
             for x in [path, error_imgs, composite_imgs, latent_dir]:
-                if not os.path.isdir(x):
-                    os.mkdir(path)
+                if not os.path.exists(x):
+                    os.mkdir(x)
 
             sample_name = str(sess.run(res_loss)[i]) + '-' + test_data_name[i].split("\\")[-1]
 
@@ -901,7 +901,9 @@ class AnomalyDetectorEncoder(object):
 
 
     def imread(self, path):
-        return imread(path, format='PNG').astype(np.float)
+        img = imread(path, format='PNG').astype(np.float)
+        assert(img.shape[0] == self.img_size)
+        return img
 
 
     def get_test_data(self, folder, batch_size):

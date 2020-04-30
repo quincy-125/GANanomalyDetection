@@ -276,31 +276,31 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
 #My scripts
 #Anomaly detection
 
-def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10):
+def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10, start_at_batch=0):
 	
 	result_subdir = misc.locate_result_subdir(run_id)
-	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=False)
+	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=True)
 	dataset_obj, mirror_augment = misc.load_dataset_for_previous_run(result_subdir, verbose=True, shuffle_mb=0)
 	print('# snapshot_pkls: ' + str(len(snapshot_pkls)))
 	
 	with tf.Graph().as_default(), tfutil.create_session(config.tf_config).as_default():
 		#Load network from specific run
 		G, D, Gs, E = misc.load_pkl(snapshot_pkls[-1])
-		print(snapshot_pkls[-1])
 		Ga = tfutil.Network('G_anomaly', num_channels=G.output_shapes[0][1],
 							resolution=G.output_shapes[0][2], label_size=dataset_obj.label_size, **config.G_anomaly)
 		Ga.copy_vars_from(Gs)
 
 		print("Initializing Anomaly detector")
-		anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga, E, test_data_folder, test_batch_size=10)
+		anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga, E, test_data_folder, test_batch_size=test_batch_size)
 		print('# AnoGAN test data names: ' + str(len(anoGAN.test_data_names)))
 
 		for batch in range(anoGAN.filename_batches.__len__()):
+			if batch < start_at_batch:
+				continue
 			test_data = anoGAN.preprocess_img(anoGAN.filename_batches[batch])
 			test_input = test_data
 			test_name = anoGAN.filename_batches[batch]
 			anoGAN.find_closest_match(test_input, test_name)
 			print(f'Batch {batch} complete..')
-		#tf.reset_default_graph()
 
 	

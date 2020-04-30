@@ -60,6 +60,7 @@ grid        = EasyDict(size='1080p', layout='row_per_cluster')
 G_anomaly   = EasyDict(func='networks.G_anomaly')             # Options for generator network.
 D_anomaly_test   = EasyDict(func='networks.D_anomaly')
 D_anomaly_Gout   = EasyDict(func='networks.D_anomaly')
+E_anomaly   = EasyDict(func='networks.E_clusterGAN')
 
 # Dataset (choose one).
 #desc += '-train_data'
