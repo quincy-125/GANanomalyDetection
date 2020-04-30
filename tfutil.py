@@ -884,7 +884,7 @@ class AnomalyDetectorEncoder(object):
                 if not os.path.exists(x):
                     os.mkdir(x)
 
-            sample_name = str(sess.run(res_loss)[i]) + '-' + test_data_name[i].split("\\")[-1]
+            sample_name = str(sess.run(res_loss)[i]) + '-' + os.path.basename(test_data_name[i])
 
             grey_img = 255 - (i_error.reshape(i_error.shape[0], i_error.shape[1],1)).astype(np.uint8)
             heatmap_img = cv2.applyColorMap(grey_img, cv2.COLORMAP_JET)
