@@ -829,87 +829,78 @@ class Network:
 
 # ----------------------------------------------------------------------------
 class AnomalyDetectorEncoder(object):
-    def __init__(self, config, Ga, Da_Gout, Da_test, Ea, test_data_folder, ano_para=0.1, test_batch_size=10):
+    def __init__(self, config, Ga, Ea, test_data_folder, ano_para=0.1, test_batch_size=10):
 
         self.config = config
         self.Ga = Ga
         self.Ea = Ea
-        self.Da_Gout = Da_Gout
-        self.Da_test = Da_test
         self.test_data_folder = test_data_folder
         self.ano_para = ano_para
         self.filename_batches = []
-
-        if (Ga.output_shapes[0][1] == 1):
-            self.grayscale = True
-        else:
-            self.grayscale = False
-
+        self.grayscale = False
         self.name = 'AnomalyDetectorEncoder'
         self.scope = tf.get_default_graph().unique_name(self.name.replace('/', '_'), mark_as_used=False)
-
         self.get_test_data(test_data_folder, test_batch_size)
-
         self.test_result_dir = "test_result"
-
         self.image_dims = [Ga.output_shapes[0][1], Ga.output_shapes[0][2], Ga.output_shapes[0][3]]
-        #self.z_dims = [Ga.input_shapes[0][2], Ga.input_shapes[0][3]]
         self.z_dims = [Ga.input_shapes[0][0], Ga.input_shapes[0][1]]
 
     def find_closest_match(self, test_data, test_data_name):
         print("Filename: ", test_data_name, "Detecting anomalies")
 
+        #test_data = (np.array(test_data) + 1) * 127.5
         test_data_tensor = tf.convert_to_tensor(np.array(test_data))
         latents = self.Ea.get_output_for(test_data_tensor, is_training=False)  # TODO FIXA SNYGGARE!!!!
-        closest_matches = self.Ga.get_output_for(latents, is_training=False)
 
+        closest_matches = self.Ga.get_output_for(latents, is_training=False)
         res_loss = 1 / (self.image_dims[0] * self.image_dims[1] * self.image_dims[2]) *tf.reduce_sum(tf.reduce_sum(tf.reduce_sum(tf.abs(tf.subtract(test_data_tensor, closest_matches)), 1), 1), 1)
 
         sess = tf.get_default_session()
         samples = sess.run(closest_matches)
+
         errors = np.absolute(samples - test_data) - 1
+        errors = np.mean(errors, axis=1)
 
-        samples = np.squeeze(samples)
         samples = (np.array(samples) + 1) * 127.5
-
-        errors = np.squeeze(errors)
-        if not self.grayscale:
-            errors = np.mean(errors, axis=0)
-            np.expand_dims(errors, axis=0)
+        sources = (np.array(test_data) + 1) * 127.5
         errors = (np.array(errors) + 1) * 127.5
 
         for i in range(samples.shape[0]):
-
+            source_img = sources[i, :, :, :]
             i_sample = samples[i, :, :, :]
-            i_error = errors[1, :, :]
+            i_error = errors[i, :, :]
+
+            source_img = source_img.astype(np.uint8)
+            i_sample = i_sample.astype(np.uint8)
+            i_error = i_error.astype(np.uint8)
+            i_sample = i_sample.transpose(1, 2, 0)
+            source_img = source_img.transpose(1, 2, 0)
 
             path = self.test_result_dir
-            if not os.path.isdir(path):
-                os.mkdir(path)
-            filename = ['AD_' + test_data_name[i].split("\\")[-1],
-                        'AD_error_' + str(sess.run(res_loss)[i]) + '_' + test_data_name[i].split("\\")[-1],
-                        'AD_anomaly_' + test_data_name[i].split("\\")[-1],
-                        'AD_detections_' + test_data_name[i].split("\\")[-1],
-                        'AD_z_' + test_data_name[i].split("\\")[-1]]
-            i_sample = i_sample.transpose(1, 2, 0)
+            error_imgs = os.path.join(path, 'error_imgs')
+            composite_imgs = os.path.join(path, 'composite_imgs')
+            latent_dir = os.path.join(path, 'latent_dir')
+            for x in [path, error_imgs, composite_imgs, latent_dir]:
+                if not os.path.isdir(x):
+                    os.mkdir(path)
 
-            if i_sample.shape[2] == 3:
-                cv2.imwrite(os.path.join(path, filename[0]), cv2.cvtColor(i_sample, cv2.COLOR_RGB2BGR))
-            else:
-                cv2.imwrite(os.path.join(path, filename[0]), i_sample)
+            sample_name = str(sess.run(res_loss)[i]) + '-' + test_data_name[i].split("\\")[-1]
 
-            rgba = cv2.cvtColor(i_sample, cv2.COLOR_RGB2RGBA)
-            rgba[:, :, 3] = i_error
-            cv2.imwrite(os.path.join(path, filename[2]), rgba)
-            cv2.imwrite(os.path.join(path, filename[1]), i_error)
-            np.save(os.path.join(path, filename[4]), sess.run(latents)[0, :])
+            grey_img = 255 - (i_error.reshape(i_error.shape[0], i_error.shape[1],1)).astype(np.uint8)
+            heatmap_img = cv2.applyColorMap(grey_img, cv2.COLORMAP_JET)
+            grey_3_channel = cv2.cvtColor(grey_img, cv2.COLOR_GRAY2BGR)
+
+            numpy_horizontal = np.hstack((source_img, i_sample.astype(np.uint8)))
+            numpy_horizontal = np.hstack((numpy_horizontal, grey_3_channel))
+            numpy_horizontal = np.hstack((numpy_horizontal, heatmap_img))
+
+            cv2.imwrite(os.path.join(composite_imgs, 'AD_merge-' + sample_name), numpy_horizontal)
+            cv2.imwrite(os.path.join(error_imgs, 'AD_error-' + sample_name), i_error)
+            np.save(os.path.join(latent_dir, 'AD_latent-' + sample_name), sess.run(latents)[0, :])
 
 
-    def imread(self, path, grayscale=False):
-        if (grayscale):
-            return imread(path, flatten=True).astype(np.float)
-        else:
-            return imread(path).astype(np.float)
+    def imread(self, path):
+        return imread(path, format='PNG').astype(np.float)
 
 
     def get_test_data(self, folder, batch_size):
@@ -925,7 +916,7 @@ class AnomalyDetectorEncoder(object):
 
     def preprocess_img(self, img_fns):
 
-        batch = [self.imread(name, self.grayscale) for name in img_fns]
+        batch = [self.imread(name) for name in img_fns]
         batch_images = np.array(batch).astype(np.float32)
 
         batch_images_t = [img.transpose(2, 0, 1) for img in batch_images]
