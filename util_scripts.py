@@ -291,7 +291,7 @@ def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10,
 		Ga.copy_vars_from(Gs)
 
 		print("Initializing Anomaly detector")
-		anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga, E, test_data_folder, test_batch_size=test_batch_size)
+		anoGAN = tfutil.AnomalyDetectorEncoder(config, Ga, E, test_data_folder, test_batch_size=test_batch_size)
 		print('# AnoGAN test data names: ' + str(len(anoGAN.test_data_names)))
 
 		for batch in range(anoGAN.filename_batches.__len__()):
