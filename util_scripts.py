@@ -20,11 +20,12 @@ import misc
 import tfutil
 import train
 import dataset
-import copy
+
 #----------------------------------------------------------------------------
 # Generate random images or image grids using a previously trained network.
 # To run, uncomment the appropriate line in config.py and launch train.py.
 
+# noinspection PyDefaultArgument
 def generate_fake_images(run_id, snapshot=None, grid_size=[1,1], num_pngs=1, image_shrink=1, png_prefix=None, random_seed=1000, minibatch_size=8):
 	network_pkl = misc.locate_network_pkl(run_id, snapshot)
 	if png_prefix is None:
@@ -46,6 +47,7 @@ def generate_fake_images(run_id, snapshot=None, grid_size=[1,1], num_pngs=1, ima
 # Generate MP4 video of random interpolations using a previously trained network.
 # To run, uncomment the appropriate line in config.py and launch train.py.
 
+# noinspection PyDefaultArgument
 def generate_interpolation_video(run_id, snapshot=None, grid_size=[1,1], image_shrink=1, image_zoom=1, duration_sec=60.0, smoothing_sec=1.0, mp4=None, mp4_fps=30, mp4_codec='libx265', mp4_bitrate='16M', random_seed=1000, minibatch_size=8):
 	network_pkl = misc.locate_network_pkl(run_id, snapshot)
 	if mp4 is None:
@@ -87,7 +89,8 @@ def generate_interpolation_video(run_id, snapshot=None, grid_size=[1,1], image_s
 # SHould be able to be used later to reproduce the image
 # To run, uncomment the appropriate line in config.py and launch train.py.
 
-def generate_test_image_with_corresponding_z(run_id, snapshot=None, grid_size=[1,1], 
+# noinspection PyDefaultArgument
+def generate_test_image_with_corresponding_z(run_id, snapshot=None, grid_size=[1,1],
 	image_shrink=1, image_zoom=1, num_frames=None, random_seed=1000, minibatch_size=8):
 	network_pkl = misc.locate_network_pkl(run_id, snapshot)
 	if num_frames is None:
@@ -276,31 +279,53 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
 #My scripts
 #Anomaly detection
 
-def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10, start_at_batch=0):
+def anomaly_detection_encoder(run_id, log, test_data_folder, test_batch_size=64, n_samples=64, label_size=0):
 	
 	result_subdir = misc.locate_result_subdir(run_id)
-	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=True)
-	dataset_obj, mirror_augment = misc.load_dataset_for_previous_run(result_subdir, verbose=True, shuffle_mb=0)
+	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=False)
 	print('# snapshot_pkls: ' + str(len(snapshot_pkls)))
 	
-	with tf.Graph().as_default(), tfutil.create_session(config.tf_config).as_default():
-		#Load network from specific run
-		G, D, Gs, E = misc.load_pkl(snapshot_pkls[-1])
-		Ga = tfutil.Network('G_anomaly', num_channels=G.output_shapes[0][1],
-							resolution=G.output_shapes[0][2], label_size=dataset_obj.label_size, **config.G_anomaly)
-		Ga.copy_vars_from(Gs)
+	for idx in range(0,n_samples,test_batch_size):
+	
+		with tf.Graph().as_default(), tfutil.create_session(config.tf_config).as_default():
+			#Load network from specific run
+			G, D, Gs, E = misc.load_pkl(snapshot_pkls[-1])
+			print(snapshot_pkls[-1])
 
-		print("Initializing Anomaly detector")
-		anoGAN = tfutil.AnomalyDetectorEncoder(config, Ga, E, test_data_folder, test_batch_size=test_batch_size)
-		print('# AnoGAN test data names: ' + str(len(anoGAN.test_data_names)))
+			#dataset_obj, mirror_augment = misc.load_dataset_for_previous_run(result_subdir, verbose=True, shuffle_mb=0)
+			
+			Ga = tfutil.Network('G_anomaly', num_channels=G.output_shapes[0][1], 
+					resolution=G.output_shapes[0][2], label_size=label_size, **config.G_anomaly)
+			Ga.copy_vars_from(Gs)
+			
+			Da_Gout = tfutil.Network('D_anomaly_Gout', num_channels=G.output_shapes[0][1], resolution=G.output_shapes[0][2], 
+					label_size=label_size, images_in = Ga.output_templates[0], **config.D_anomaly_Gout)
+			image_dims = [G.output_shapes[0][1], G.output_shapes[0][2], G.output_shapes[0][3]]
+			Da_test = tfutil.Network('D_anomaly_test', num_channels=G.output_shapes[0][1], resolution=G.output_shapes[0][2], 
+					label_size=label_size,
+					**config.D_anomaly_test)
+			
+			print('Loaded Layers SUccessfullly')
+			for i in G, D, Gs, E, Ga, Da_Gout, image_dims,Da_test :
+				print(i.shape)
+			exit(1)
 
-		for batch in range(anoGAN.filename_batches.__len__()):
-			if batch < start_at_batch:
-				continue
-			test_data = anoGAN.preprocess_img(anoGAN.filename_batches[batch])
-			test_input = test_data
-			test_name = anoGAN.filename_batches[batch]
+			Da_Gout.copy_vars_from(D)
+			Da_test.copy_vars_from(D)
+
+
+			Da_Gout.print_layers()
+			Da_test.print_layers()
+			E.print_layers()
+			
+			print("Initializing Anomaly detector")
+			anoGAN = tfutil.AnomalyDetectorEncoder(config,Ga,Da_Gout,Da_test,E,test_data_folder)
+			print('# AnoGAN test data names: ' + str(len(anoGAN.test_data_names)))
+			assert len(anoGAN.test_data_names) > 0
+
+			test_input = anoGAN.test_data[idx:idx+test_batch_size]
+			test_name = anoGAN.test_data_names[idx:idx+test_batch_size]
 			anoGAN.find_closest_match(test_input, test_name)
-			print(f'Batch {batch} complete..')
+	tf.reset_default_graph()
 
 	

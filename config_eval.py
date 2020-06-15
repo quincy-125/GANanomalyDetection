@@ -21,7 +21,7 @@ class EasyDict(dict):
 #data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Normal/tfrecords/progan'
 #data_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Code/GANanomalyDetection/datasets' #mnist
 data_dir='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/'
-result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/Results'
+result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Results/tmp'
 
 #----------------------------------------------------------------------------
 # TensorFlow options.
@@ -53,11 +53,11 @@ D_loss      = EasyDict(func='loss.D_wgangp_acgan')          # Options for discri
 E_loss      = EasyDict(func='loss.E_wgangp_acgan')          # Options for encoder loss.
 sched       = EasyDict()                                    # Options for train.TrainingSchedule.
 #grid        = EasyDict(size='1080p', layout='random')       # Options for train.setup_snapshot_image_grid().
-grid        = EasyDict(size='1080p', layout='row_per_cluster') 
+grid        = EasyDict(size='1080p', layout='row_per_cluster')
 
 G_anomaly   = EasyDict(func='networks.G_anomaly')             # Options for generator network.
-D_anomaly_test   = EasyDict(func='networks.D_anomaly') 
-D_anomaly_Gout   = EasyDict(func='networks.D_anomaly')   
+D_anomaly_test   = EasyDict(func='networks.D_anomaly')
+D_anomaly_Gout   = EasyDict(func='networks.D_anomaly')
 
 # Dataset (choose one).
 desc += '-train_data'
@@ -116,7 +116,7 @@ dataset = EasyDict(tfrecord_dir='train_data')
 
 # Config presets (choose one).
 #desc += '-preset-v1-1gpu'; num_gpus = 1; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {4: 16, 8: 16, 16: 16, 32: 16, 64: 16, 128: 1, 512: 1, 1024: 1}; sched.lod_training_kimg = 800; sched.lod_transition_kimg = 800; train.total_kimg = 800
-desc += '-preset-v1-4gpu';  num_gpus = 4; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 64, 64: 64, 128: 4, 512: 4, 1024: 4}; sched.lod_training_kimg = 800; sched.lod_transition_kimg = 800; train.total_kimg = 19000
+#desc += '-preset-v1-4gpu';  num_gpus = 4; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 64, 64: 64, 128: 4, 512: 4, 1024: 4}; sched.lod_training_kimg = 800; sched.lod_transition_kimg = 800; train.total_kimg = 19000
 #desc += '-preset-v2-1gpu'; num_gpus = 1; sched.minibatch_base = 4; sched.minibatch_dict = {4: 128, 8: 128, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8, 512: 4}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 #desc += '-preset-v2-1gpu'; num_gpus = 4; sched.minibatch_base = 4; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 64, 64: 32, 128: 16, 256: 8, 512: 4}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 #desc += '-preset-v2-2gpus'; num_gpus = 2; sched.minibatch_base = 8; sched.minibatch_dict = {4: 256, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8}; sched.G_lrate_dict = {512: 0.0015, 1024: 0.002}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
@@ -124,7 +124,7 @@ desc += '-preset-v1-4gpu';  num_gpus = 4; D.mbstd_group_size = 16; sched.minibat
 #desc += '-preset-v2-8gpus'; num_gpus = 8; sched.minibatch_base = 32; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32}; sched.G_lrate_dict = {128: 0.0015, 256: 0.002, 512: 0.003, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 
 # Numerical precision (choose one).
-desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
+#desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
 #desc += '-fp16'; G.dtype = 'float16'; D.dtype = 'float16'; G.pixelnorm_epsilon=1e-4; G_opt.use_loss_scaling = True; D_opt.use_loss_scaling = True; sched.max_minibatch_per_gpu = {512: 16, 1024: 8}
 
 # Disable individual features.
@@ -140,8 +140,8 @@ desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 16, 512: 8, 1024: 4}
 #desc += '-BENCHMARK'; sched.lod_initial_resolution = 4; sched.lod_training_kimg = 3; sched.lod_transition_kimg = 3; train.total_kimg = (8*2+1)*3; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1000; train.network_snapshot_ticks = 1000
 #desc += '-BENCHMARK0'; sched.lod_initial_resolution = 1024; train.total_kimg = 10; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1000; train.network_snapshot_ticks = 1000
 #desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1; train.network_snapshot_ticks = 100
-desc += '-GRAPH'; train.save_tf_graph = True
-desc += '-HIST'; train.save_weight_histograms = True
+#desc += '-GRAPH'; train.save_tf_graph = True
+#desc += '-HIST'; train.save_weight_histograms = True
 
 #----------------------------------------------------------------------------
 # Utility scripts.
@@ -159,6 +159,6 @@ desc += '-HIST'; train.save_weight_histograms = True
 #train = EasyDict(func='util_scripts.evaluate_metrics', run_id=23, log='metric-msssim-20k.txt', metrics=['msssim'], num_images=20000, real_passes=1); num_gpus = 1; desc = train.log.split('.')[0] + '-' + str(train.run_id)
 
 #Anomaly detection example
-#train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id=0, log='anomaly_detection_cv_32_mnist', test_data_folder="datasets/mnist_2_0.0/validation/anomaly/"); num_gpus = 1; desc = 'anomaly-detection-' + str(train.run_id)
+train = EasyDict(func='util_scripts.anomaly_detection_encoder', run_id='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Data/Results/000-pgan-mnist_2_0.0-preset-v1-1gpu-fp32-HIST', log='/tmp/anomaly_detection_cv_32_mnist', test_data_folder="datasets/mnist_2_0.0/validation/anomaly/"); num_gpus = 1; desc = 'anomaly-detection-' + str(train.run_id)
 
 #----------------------------------------------------------------------------
